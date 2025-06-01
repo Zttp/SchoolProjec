@@ -1,5 +1,6 @@
 import { DisplayValueHeader, Color, Vector3} from 'pixel_combats/basic';
 import { Game, Players, Inventory, LeaderBoard, BuildBlocksSet, Teams, Damage, BreackGraph, Ui, Properties, GameMode, Spawns, Timers, TeamsBalancer, AreaService, AreaPlayerTriggerService, AreaViewService, Chat } from 'pixel_combats/room';
+
 // ========== КОНСТАНТЫ И НАСТРОЙКИ ==========
 const LESSON_TIME = 180;      // Длительность урока (сек)
 const BREAK_TIME = 120;       // Длительность перемены (сек)
@@ -80,9 +81,9 @@ function initServerProperties() {
 
 // Создание команд
 function setupTeams() {
-    Teams.Add('ClassA', '9 "А"', CLASS_COLOR);
-    Teams.Add('ClassB', '9 "Б"', CLASS_COLOR);
-    Teams.Add('ClassC', '9 "В"', CLASS_COLOR);
+    Teams.Add('ClassA', '9 А', CLASS_COLOR);
+    Teams.Add('ClassB', '9 Б', CLASS_COLOR);
+    Teams.Add('ClassC', '9 В', CLASS_COLOR);
 
     const ClassA = Teams.Get('ClassA');
     const ClassB = Teams.Get('ClassB');
@@ -1204,10 +1205,7 @@ function initSchoolMode() {
     
     // Инициализация систем
     initServerProperties();
-    setupSchoolZones();
-    setupLeaderboard();
-    initChatCommands();
-    setupEventHandlers();
+    
     
     // Назначаем роли
     assignRoles();
