@@ -1,4 +1,4 @@
-import { DisplayValueHeader, Color, Vector3 } from 'pixel_combats/basic';
+import { DisplayValueHeader, Color, Vector3, BuildBlocksSet } from 'pixel_combats/basic';
 import { Game, Players, Inventory, LeaderBoard, Teams, Damage, Ui, Properties, Spawns, Timers, AreaService, AreaPlayerTriggerService, AreaViewService, Chat } from 'pixel_combats/room';
 
 // ========== КОНСТАНТЫ И НАСТРОЙКИ ==========
@@ -104,9 +104,7 @@ function setupTeams() {
 
 const { ClassA, ClassB, ClassC } = setupTeams();
 
-
-
-// Создание зон школы (улучшенная версия)
+// Создание зон школы
 function setupSchoolZones() {
     // Зоны классов
     createSchoolZone("class_math", CLASS_COLOR, "Урок математики", "class");
@@ -242,7 +240,7 @@ function setSchoolState(newState) {
 
 // Утренняя линейка
 function startMorningAssembly() {
-    const assemblyTime = 60;
+    let assemblyTime = 60;
     Props.Get('Time_Left').Value = assemblyTime;
     
     const assemblyTimer = Timers.GetContext().Get("AssemblyTimer");
@@ -273,6 +271,13 @@ function startLesson() {
     const subjects = ["math", "biology", "history"];
     schoolMode.currentLesson = subjects[Math.floor(Math.random() * subjects.length)];
     Props.Get('Current_Lesson').Value = schoolMode.currentLesson;
+    
+    // Отключаем оружие у учеников
+    Players.All.forEach(player => {
+        if (player.Properties.Get('Role').Value === 'student') {
+            player.Inventory.Melee.Value = false;
+        }
+    });
     
     // Запускаем таймер урока
     schoolMode.lessonEndTime = LESSON_TIME;
@@ -638,6 +643,13 @@ function addPlayerEnergy(playerId, points) {
     const currentEnergy = schoolMode.playerEnergy.get(playerId) || 100;
     const newEnergy = Math.max(0, Math.min(100, currentEnergy + points));
     schoolMode.playerEnergy.set(playerId, newEnergy);
+    
+    // Обновляем свойство игрока
+    const player = Players.Get(playerId);
+    if (player) {
+        player.Properties.Get('Energy').Value = newEnergy;
+    }
+    
     return newEnergy;
 }
 
@@ -650,6 +662,13 @@ function addPlayerHunger(playerId, points) {
     const currentHunger = schoolMode.playerHunger.get(playerId) || 0;
     const newHunger = Math.max(0, Math.min(100, currentHunger + points));
     schoolMode.playerHunger.set(playerId, newHunger);
+    
+    // Обновляем свойство игрока
+    const player = Players.Get(playerId);
+    if (player) {
+        player.Properties.Get('Hunger').Value = newHunger;
+    }
+    
     return newHunger;
 }
 
@@ -867,7 +886,7 @@ function initChatCommands() {
 /hunger - мой голод
 
 🧑‍🏫 Команды учителей:
-/punish [id] - наказать ученика
+/punish [ник] - наказать ученика
 /homework - задать доп. задание
 
 👑 Команды директора:
@@ -937,11 +956,12 @@ function initChatCommands() {
             }
             
             if (args.length < 2) {
-                sender.Ui.Hint.Value = "Использование: /punish [id]";
+                sender.Ui.Hint.Value = "Использование: /punish [ник]";
                 return;
             }
             
-            const target = Players.GetByRoomId(Number(args[1]));
+            const targetName = args.slice(1).join(' ');
+            const target = Players.All.find(p => p.NickName === targetName);
             if (!target) {
                 sender.Ui.Hint.Value = "Игрок не найден!";
                 return;
@@ -1180,6 +1200,8 @@ function initSchoolMode() {
     schoolMode.activeQuestion = null;
     schoolMode.activeHomework = null;
     schoolMode.cleaningAreas.clear();
+    schoolMode.director = null;
+    schoolMode.teachers = [];
     
     // Инициализация систем
     initServerProperties();
@@ -1191,6 +1213,8 @@ function initSchoolMode() {
     // Назначаем роли
     assignRoles();
     
+    // Запускаем утреннее состояние
+    setSchoolState(SchoolStates.MORNING);
 }
 
 // Запуск игры
