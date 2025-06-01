@@ -1,5 +1,5 @@
-import { DisplayValueHeader, Color, Vector3, BuildBlocksSet } from 'pixel_combats/basic';
-import { Game, Players, Inventory, LeaderBoard, Teams, Damage, Ui, Properties, Spawns, Timers, AreaService, AreaPlayerTriggerService, AreaViewService, Chat } from 'pixel_combats/room';
+import { DisplayValueHeader, Color, Vector3 } from 'pixel_combats/basic';
+import { Game, Players, Inventory, LeaderBoard, BuildBlocksSet, Teams, Damage, BreackGraph, Ui, Properties, GameMode, Spawns, Timers, TeamsBalancer, AreaService, AreaPlayerTriggerService, AreaViewService, Chat } from 'pixel_combats/room';
 
 // ========== КОНСТАНТЫ И НАСТРОЙКИ ==========
 const LESSON_TIME = 180;      // Длительность урока (сек)
