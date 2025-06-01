@@ -1,0 +1,20 @@
+{
+  "ApiVersion": 2,
+  "Name": "School ",
+  "Description": "в разработке",
+  "StartClientVersion": 532,
+  "MapLists": [
+    {
+      "MapListId": 23052,
+      "Name": "СПИСОК КАРТ ДЛЯ РЕЖИМА ШКОЛА"
+    }
+  ],
+  "Parameters": {
+    "Bool": [
+      {
+        "Name": "Damage",
+        "DisplayName": ""
+      }
+    ]
+  }
+}
