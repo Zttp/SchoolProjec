@@ -79,20 +79,32 @@ function initServerProperties() {
     Props.Get('Cleaning_Progress').Value = 0;
 }
 
-// Создание команд (классов)
-function setupClasses() {
-    Teams.Add('ClassA', '9 "А"', new Color(0, 0, 1, 0));
-    Teams.Add('ClassB', '9 "Б"', new Color(0, 1, 0, 0));
-    Teams.Add('ClassC', '9 "В"', new Color(1, 0, 0, 0));
-    
-    return {
-        ClassA: Teams.Get('ClassA'),
-        ClassB: Teams.Get('ClassB'),
-        ClassC: Teams.Get('ClassC')
-    };
+// Создание команд
+function setupTeams() {
+    Teams.Add('ClassA', '9 "А"', CLASS_COLOR);
+    Teams.Add('ClassB', '9 "Б"', CLASS_COLOR);
+    Teams.Add('ClassC', '9 "В"', CLASS_COLOR);
+
+    const ClassA = Teams.Get('ClassA');
+    const ClassB = Teams.Get('ClassB');
+    const ClassC = Teams.Get('ClassC');
+
+    // Настройки строительства
+    ClassA.Build.BlocksSet.Value = BuildBlocksSet.Blue;
+    ClassB.Build.BlocksSet.Value = BuildBlocksSet.Red;
+    ClassC.Build.BlocksSet.Value = BuildBlocksSet.Green;
+
+    // Настройки спавнов
+    ClassA.Spawns.SpawnPointsGroups.Add(1);
+    ClassB.Spawns.SpawnPointsGroups.Add(2);
+    ClassC.Spawns.SpawnPointsGroups.Add(3);
+
+    return { ClassA, ClassB, ClassC };
 }
 
-const { ClassA, ClassB, ClassC } = setupClasses();
+const { ClassA, ClassB, ClassC } = setupTeams();
+
+
 
 // Создание зон школы (улучшенная версия)
 function setupSchoolZones() {
