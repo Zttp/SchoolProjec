@@ -1,5 +1,5 @@
-import { DisplayValueHeader, Color, Vector3} from 'pixel_combats/basic';
-import { Game, Players, Inventory, LeaderBoard, BuildBlocksSet, Teams, Damage, BreackGraph, Ui, Properties, GameMode, Spawns, Timers, TeamsBalancer, AreaService, AreaPlayerTriggerService, AreaViewService, Chat } from 'pixel_combats/room';
+import { DisplayValueHeader, Color, Vector3, BuildBlocksSet } from 'pixel_combats/basic';
+import { Game, Players, Inventory, LeaderBoard, Teams, Damage, Ui, Properties, Spawns, Timers, AreaService, AreaPlayerTriggerService, AreaViewService, Chat } from 'pixel_combats/room';
 
 // ========== КОНСТАНТЫ И НАСТРОЙКИ ==========
 const LESSON_TIME = 180;      // Длительность урока (сек)
@@ -79,11 +79,17 @@ function initServerProperties() {
     Props.Get('Cleaning_Progress').Value = 0;
 }
 
-// Создание команд
+// Создание команд с учетом нового API
 function setupTeams() {
-    Teams.Add('ClassA', '9 А', CLASS_COLOR);
-    Teams.Add('ClassB', '9 Б', CLASS_COLOR);
-    Teams.Add('ClassC', '9 В', CLASS_COLOR);
+    // Удаляем все существующие команды
+    Teams.All.forEach(team => {
+        Teams.Remove(team.Id);
+    });
+
+    // Создаем новые команды
+    Teams.Add('ClassA', '9 "А"', CLASS_COLOR);
+    Teams.Add('ClassB', '9 "Б"', CLASS_COLOR);
+    Teams.Add('ClassC', '9 "В"', CLASS_COLOR);
 
     const ClassA = Teams.Get('ClassA');
     const ClassB = Teams.Get('ClassB');
@@ -180,7 +186,7 @@ function handleZoneEnter(player, tag) {
             break;
             
         case "detention":
-            if (schoolMode.detentionPlayers.has(player.id)) {
+            if (schoolMode.detentionPlayers.has(player.Id)) {
                 player.Ui.Hint.Value += `\nОсталось: ${getDetentionTimeLeft(player)} сек`;
             }
             break;
@@ -255,8 +261,8 @@ function startMorningAssembly() {
         
         // Награда за построение
         Players.All.forEach(player => {
-            if (player.Team && AreaPlayerTriggerService.Get("schoolyard").IsPlayerInside(player.id)) {
-                addPlayerScore(player.id, 2);
+            if (player.Team && AreaPlayerTriggerService.Get("schoolyard").IsPlayerInside(player.Id)) {
+                addPlayerScore(player.Id, 2);
             }
         });
         
@@ -301,12 +307,12 @@ function startLesson() {
         // Награждаем учеников в классах
         Players.All.forEach(player => {
             if (player.Properties.Get('Role').Value === 'student') {
-                const inClass = AreaPlayerTriggerService.Get("class_" + schoolMode.currentLesson).IsPlayerInside(player.id);
+                const inClass = AreaPlayerTriggerService.Get("class_" + schoolMode.currentLesson).IsPlayerInside(player.Id);
                 if (inClass) {
-                    addPlayerScore(player.id, 5);
-                    addPlayerEnergy(player.id, 1);
+                    addPlayerScore(player.Id, 5);
+                    addPlayerEnergy(player.Id, 1);
                 } else {
-                    addPlayerHunger(player.id, 1);
+                    addPlayerHunger(player.Id, 1);
                 }
             }
         });
@@ -388,7 +394,7 @@ function startBreak() {
     Players.All.forEach(player => {
         if (player.Properties.Get('Role').Value === 'student') {
             player.Inventory.Melee.Value = true;
-            addPlayerHunger(player.id, 20); // Голод после урока
+            addPlayerHunger(player.Id, 20); // Голод после урока
         }
     });
     
@@ -421,11 +427,11 @@ function startBreak() {
         // Уменьшаем энергию и увеличиваем голод
         Players.All.forEach(player => {
             if (player.Properties.Get('Role').Value === 'student') {
-                addPlayerEnergy(player.id, -1);
-                addPlayerHunger(player.id, 1);
+                addPlayerEnergy(player.Id, -1);
+                addPlayerHunger(player.Id, 1);
                 
                 // Проверка голода
-                if (getPlayerHunger(player.id) >= 100) {
+                if (getPlayerHunger(player.Id) >= 100) {
                     player.Health.Value -= 5;
                     player.Ui.Hint.Value = "Вы голодаете! Сходите в столовую!";
                 }
@@ -451,7 +457,7 @@ function startMeeting() {
         if (meetingTime <= 0) {
             // Наказываем игроков не в зале
             Players.All.forEach(player => {
-                if (!AreaPlayerTriggerService.Get("gym").IsPlayerInside(player.id)) {
+                if (!AreaPlayerTriggerService.Get("gym").IsPlayerInside(player.Id)) {
                     punishPlayer(player, "Пропуск собрания");
                 }
             });
@@ -548,7 +554,7 @@ function endSchoolDay() {
     
     Players.All.forEach(player => {
         const role = player.Properties.Get('Role').Value;
-        const score = schoolMode.playerScores.get(player.id) || 0;
+        const score = schoolMode.playerScores.get(player.Id) || 0;
         
         if (role === 'student' && score > maxStudentScore) {
             maxStudentScore = score;
@@ -591,14 +597,14 @@ function punishPlayer(player, reason) {
     player.Inventory.Melee.Value = false;
     
     // Запускаем таймер наказания
-    schoolMode.detentionPlayers.add(player.id);
+    schoolMode.detentionPlayers.add(player.Id);
     
     player.Ui.Hint.Value = `⛔ Вы наказаны! Причина: ${reason}`;
     console.log(`Игрок ${player.NickName} наказан: ${reason}`);
     
     const detentionTimer = Timers.GetContext(player).Get("DetentionTimer");
     detentionTimer.OnTimer.Add(function() {
-        schoolMode.detentionPlayers.delete(player.id);
+        schoolMode.detentionPlayers.delete(player.Id);
         player.Spawns.Spawn();
         player.Ui.Hint.Value = "Вы освобождены из карцера!";
     });
@@ -685,7 +691,7 @@ function handleAnswer(player, answer) {
     
     // Проверяем ответ
     if (answer.toLowerCase() === schoolMode.activeQuestion.answer.toLowerCase()) {
-        const newScore = addPlayerScore(player.id, schoolMode.state === SchoolStates.EXAM ? 200 : 100);
+        const newScore = addPlayerScore(player.Id, schoolMode.state === SchoolStates.EXAM ? 200 : 100);
         player.Ui.Hint.Value = `✅ Правильно! +${schoolMode.state === SchoolStates.EXAM ? 200 : 100} очков (Всего: ${newScore})`;
         
         // Для экзамена сразу переходим к следующему вопросу
@@ -702,8 +708,8 @@ function startEating(player) {
     const eatTimer = Timers.GetContext(player).Get("EatTimer");
     
     eatTimer.OnTimer.Add(function() {
-        const hunger = addPlayerHunger(player.id, -5);
-        addPlayerEnergy(player.id, 2);
+        const hunger = addPlayerHunger(player.Id, -5);
+        addPlayerEnergy(player.Id, 2);
         
         player.Ui.Hint.Value = `🍎 Прием пищи... Голод: ${hunger}%`;
         
@@ -733,15 +739,15 @@ function startCleaning(player) {
         const progress = Props.Get('Cleaning_Progress').Value + 1;
         Props.Get('Cleaning_Progress').Value = progress;
         
-        addPlayerScore(player.id, 10);
-        addPlayerEnergy(player.id, -3);
+        addPlayerScore(player.Id, 10);
+        addPlayerEnergy(player.Id, -3);
         
         player.Ui.Hint.Value = `🧹 Уборка... Прогресс: ${progress}%`;
         
         if (progress >= 100) {
             cleanTimer.Stop();
             player.Ui.Hint.Value = "Уборка завершена! +100 очков";
-            addPlayerScore(player.id, 100);
+            addPlayerScore(player.Id, 100);
             schoolMode.cleaningAreas.delete("cleaning_area");
         }
     });
@@ -794,7 +800,7 @@ function assignRoles() {
     
     // Назначаем директора (случайный игрок с высоким рейтингом)
     const sortedPlayers = [...players].sort((a, b) => {
-        return (schoolMode.playerScores.get(b.id) || 0) - (schoolMode.playerScores.get(a.id) || 0);
+        return (schoolMode.playerScores.get(b.Id) || 0) - (schoolMode.playerScores.get(a.Id) || 0);
     });
     
     if (sortedPlayers.length > 0) {
@@ -834,7 +840,7 @@ function setupLeaderboard() {
     ];
 
     LeaderBoard.PlayersWeightGetter.Set(function(player) {
-        return schoolMode.playerScores.get(player.id) || 0;
+        return schoolMode.playerScores.get(player.Id) || 0;
     });
 }
 
@@ -856,9 +862,9 @@ function initPlayer(player) {
     randomClass.Add(player);
     
     // Начальные значения
-    schoolMode.playerScores.set(player.id, 0);
-    schoolMode.playerEnergy.set(player.id, 100);
-    schoolMode.playerHunger.set(player.id, 0);
+    schoolMode.playerScores.set(player.Id, 0);
+    schoolMode.playerEnergy.set(player.Id, 100);
+    schoolMode.playerHunger.set(player.Id, 0);
     
     player.Ui.Hint.Value = 'Добро пожаловать в школу! /help - список команд';
 }
@@ -874,236 +880,14 @@ function initChatCommands() {
         const command = args[0].toLowerCase();
         const role = sender.Properties.Get('Role').Value;
 
-        // Помощь
-        if (command === '/help') {
-            sender.Ui.Hint.Value = `📚 Школьные команды:
-/answer [ответ] - ответить на вопрос
-/ask [вопрос] - задать вопрос нейросети
-/where - где я должен быть?
-/scores - мои очки
-/class - мой класс
-/energy - моя энергия
-/hunger - мой голод
-
-🧑‍🏫 Команды учителей:
-/punish [ник] - наказать ученика
-/homework - задать доп. задание
-
-👑 Команды директора:
-/meeting - начать собрание
-/exam - начать экзамен
-/endday - завершить учебный день
-
-🎮 Игровые команды:
-/exercise - тренировка (в спортзале)
-/study - учеба (в библиотеке)
-/clean - уборка (в зоне уборки)
-/eat - поесть (в столовой)
-/homework - делать домашку (в классе)`;
-        }
-        
-        // Ответ на вопрос
-        else if (command === '/answer') {
-            if (args.length < 2) {
-                sender.Ui.Hint.Value = "Использование: /answer [ответ]";
-                return;
-            }
-            
-            const answer = args.slice(1).join(' ');
-            handleAnswer(sender, answer);
-        }
-        
-        // Вопрос к "нейросети"
-        else if (command === '/ask') {
-            if (args.length < 2) {
-                sender.Ui.Hint.Value = "Использование: /ask [вопрос]";
-                return;
-            }
-            
-            const question = args.slice(1).join(' ');
-            const response = getNeuroResponse(question);
-            sender.Ui.Hint.Value = `🧠 Нейросеть: ${response}`;
-        }
-        
-        // Где я должен быть?
-        else if (command === '/where') {
-            switch(schoolMode.state) {
-                case SchoolStates.MORNING:
-                    sender.Ui.Hint.Value = "Идет утренняя линейка! Иди на школьный двор!";
-                    break;
-                case SchoolStates.LESSON:
-                    sender.Ui.Hint.Value = `Ты должен быть в классе ${schoolMode.currentLesson}!`;
-                    break;
-                case SchoolStates.BREAK:
-                    sender.Ui.Hint.Value = "Сейчас перемена! Можешь отдыхать!";
-                    break;
-                case SchoolStates.MEETING:
-                    sender.Ui.Hint.Value = "Идет собрание! Срочно в спортзал!";
-                    break;
-                case SchoolStates.EXAM:
-                    sender.Ui.Hint.Value = "Идет экзамен! Займи место в любом классе!";
-                    break;
-                default:
-                    sender.Ui.Hint.Value = "Сейчас нет занятий";
-            }
-        }
-        
-        // Наказать ученика
-        else if (command === '/punish') {
-            if (role !== 'teacher' && role !== 'director') {
-                sender.Ui.Hint.Value = "❌ Только для учителей!";
-                return;
-            }
-            
-            if (args.length < 2) {
-                sender.Ui.Hint.Value = "Использование: /punish [ник]";
-                return;
-            }
-            
-            const targetName = args.slice(1).join(' ');
-            const target = Players.All.find(p => p.NickName === targetName);
-            if (!target) {
-                sender.Ui.Hint.Value = "Игрок не найден!";
-                return;
-            }
-            
-            if (target.Properties.Get('Role').Value !== 'student') {
-                sender.Ui.Hint.Value = "Можно наказывать только учеников!";
-                return;
-            }
-            
-            punishPlayer(target, "Нарушение дисциплины");
-            sender.Ui.Hint.Value = `⛔ Вы наказали ${target.NickName}`;
-            addPlayerScore(sender.id, 50);
-        }
-        
-        // Начать собрание
-        else if (command === '/meeting') {
-            if (role !== 'director') {
-                sender.Ui.Hint.Value = "❌ Только для директора!";
-                return;
-            }
-            
-            setSchoolState(SchoolStates.MEETING);
-            sender.Ui.Hint.Value = "Собрание начато! Все в спортзал!";
-        }
-        
-        // Начать экзамен
-        else if (command === '/exam') {
-            if (role !== 'director') {
-                sender.Ui.Hint.Value = "❌ Только для директора!";
-                return;
-            }
-            
-            setSchoolState(SchoolStates.EXAM);
-            sender.Ui.Hint.Value = "Экзамен начат! Все в классы!";
-        }
-        
-        // Проверить очки
-        else if (command === '/scores') {
-            const score = schoolMode.playerScores.get(sender.id) || 0;
-            sender.Ui.Hint.Value = `📊 Твои очки: ${score}`;
-        }
-        
-        // Проверить класс
-        else if (command === '/class') {
-            sender.Ui.Hint.Value = `Твой класс: ${sender.Team.Name}`;
-        }
-        
-        // Проверить энергию
-        else if (command === '/energy') {
-            const energy = getPlayerEnergy(sender.id);
-            sender.Ui.Hint.Value = `⚡ Твоя энергия: ${energy}%`;
-        }
-        
-        // Проверить голод
-        else if (command === '/hunger') {
-            const hunger = getPlayerHunger(sender.id);
-            sender.Ui.Hint.Value = `🍎 Твой голод: ${hunger}%`;
-        }
-        
-        // Тренировка
-        else if (command === '/exercise') {
-            if (!AreaPlayerTriggerService.Get("gym").IsPlayerInside(sender.id)) {
-                sender.Ui.Hint.Value = "❌ Ты не в спортзале!";
-                return;
-            }
-            
-            if (schoolMode.state !== SchoolStates.BREAK) {
-                sender.Ui.Hint.Value = "❌ Тренироваться можно только на перемене!";
-                return;
-            }
-            
-            const exerciseTimer = Timers.GetContext(sender).Get("ExerciseTimer");
-            exerciseTimer.OnTimer.Add(function() {
-                addPlayerEnergy(sender.id, -10);
-                addPlayerScore(sender.id, 15);
-                
-                if (getPlayerEnergy(sender.id) <= 0) {
-                    exerciseTimer.Stop();
-                    sender.Ui.Hint.Value = "Ты устал! Отдохни!";
-                } else {
-                    sender.Ui.Hint.Value = `💪 Тренировка... Энергия: ${getPlayerEnergy(sender.id)}%`;
-                }
-            });
-            exerciseTimer.Restart(5);
-        }
-        
-        // Учеба в библиотеке
-        else if (command === '/study') {
-            if (!AreaPlayerTriggerService.Get("library").IsPlayerInside(sender.id)) {
-                sender.Ui.Hint.Value = "❌ Ты не в библиотеке!";
-                return;
-            }
-            
-            const studyTimer = Timers.GetContext(sender).Get("StudyTimer");
-            studyTimer.OnTimer.Add(function() {
-                addPlayerEnergy(sender.id, -5);
-                addPlayerScore(sender.id, 10);
-                
-                if (getPlayerEnergy(sender.id) <= 0) {
-                    studyTimer.Stop();
-                    sender.Ui.Hint.Value = "Ты устал! Отдохни!";
-                } else {
-                    sender.Ui.Hint.Value = `📖 Учеба... Энергия: ${getPlayerEnergy(sender.id)}%`;
-                }
-            });
-            studyTimer.Restart(8);
-        }
-        
-        // Уборка
-        else if (command === '/clean') {
-            if (!AreaPlayerTriggerService.Get("cleaning_area").IsPlayerInside(sender.id)) {
-                sender.Ui.Hint.Value = "❌ Ты не в зоне уборки!";
-                return;
-            }
-            
-            if (schoolMode.state !== SchoolStates.BREAK) {
-                sender.Ui.Hint.Value = "❌ Убираться можно только на перемене!";
-                return;
-            }
-            
-            startCleaning(sender);
-        }
-        
-        // Прием пищи
-        else if (command === '/eat') {
-            if (!AreaPlayerTriggerService.Get("cafeteria").IsPlayerInside(sender.id)) {
-                sender.Ui.Hint.Value = "❌ Ты не в столовой!";
-                return;
-            }
-            
-            startEating(sender);
-        }
-        
-        // Выполнение домашнего задания
+                // Выполнение домашнего задания
         else if (command === '/homework') {
             if (!schoolMode.activeHomework) {
                 sender.Ui.Hint.Value = "❌ Сейчас нет домашнего задания!";
                 return;
             }
             
-            if (!AreaPlayerTriggerService.Get("class_" + schoolMode.activeHomework.subject).IsPlayerInside(sender.id)) {
+            if (!AreaPlayerTriggerService.Get("class_" + schoolMode.activeHomework.subject).IsPlayerInside(sender.Id)) {
                 sender.Ui.Hint.Value = `❌ Ты не в классе ${schoolMode.activeHomework.subject}!`;
                 return;
             }
@@ -1115,7 +899,7 @@ function initChatCommands() {
                 
                 if (schoolMode.activeHomework.progress >= schoolMode.activeHomework.maxProgress) {
                     homeworkTimer.Stop();
-                    addPlayerScore(sender.id, 150);
+                    addPlayerScore(sender.Id, 150);
                     sender.Ui.Hint.Value = "✅ Домашнее задание выполнено! +150 очков";
                 } else {
                     sender.Ui.Hint.Value = `📝 Делаю домашку... ${schoolMode.activeHomework.progress}/${schoolMode.activeHomework.maxProgress}`;
@@ -1156,10 +940,10 @@ function setupEventHandlers() {
     
     // При отключении игрока
     Players.OnPlayerDisconnected.Add(function(player) {
-        schoolMode.playerScores.delete(player.id);
-        schoolMode.playerEnergy.delete(player.id);
-        schoolMode.playerHunger.delete(player.id);
-        schoolMode.detentionPlayers.delete(player.id);
+        schoolMode.playerScores.delete(player.Id);
+        schoolMode.playerEnergy.delete(player.Id);
+        schoolMode.playerHunger.delete(player.Id);
+        schoolMode.detentionPlayers.delete(player.Id);
         assignRoles();
     });
     
@@ -1184,17 +968,29 @@ function setupEventHandlers() {
     // При смерти
     Damage.OnDeath.Add(function(player) {
         player.Spawns.Spawn();
-        addPlayerEnergy(player.id, -30);
+        addPlayerEnergy(player.Id, -30);
         player.Ui.Hint.Value = "Ты умер! -30 энергии";
     });
 }
 
 // Основная инициализация
 function initSchoolMode() {
-    
+    // Сброс состояния
+    schoolMode.state = SchoolStates.MORNING;
+    schoolMode.currentLesson = "math";
+    schoolMode.playerScores.clear();
+    schoolMode.playerEnergy.clear();
+    schoolMode.playerHunger.clear();
+    schoolMode.detentionPlayers.clear();
+    schoolMode.activeQuestion = null;
+    schoolMode.activeHomework = null;
+    schoolMode.cleaningAreas.clear();
+    schoolMode.director = null;
+    schoolMode.teachers = [];
     
     // Инициализация систем
     initServerProperties();
+    setupTeams(); // Пересоздаем команды
     setupSchoolZones();
     setupLeaderboard();
     initChatCommands();
@@ -1208,4 +1004,4 @@ function initSchoolMode() {
 }
 
 // Запуск игры
-initSchoolMode();
+initSchoolMode();                  
