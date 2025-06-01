@@ -975,18 +975,7 @@ function setupEventHandlers() {
 
 // Основная инициализация
 function initSchoolMode() {
-    // Сброс состояния
-    schoolMode.state = SchoolStates.MORNING;
-    schoolMode.currentLesson = "math";
-    schoolMode.playerScores.clear();
-    schoolMode.playerEnergy.clear();
-    schoolMode.playerHunger.clear();
-    schoolMode.detentionPlayers.clear();
-    schoolMode.activeQuestion = null;
-    schoolMode.activeHomework = null;
-    schoolMode.cleaningAreas.clear();
-    schoolMode.director = null;
-    schoolMode.teachers = [];
+    
     
     // Инициализация систем
     initServerProperties();
