@@ -1179,7 +1179,6 @@ function initSchoolMode() {
     // Назначаем роли
     assignRoles();
     
-    console.log("Режим 'Школа' инициализирован!");
 }
 
 // Запуск игры
