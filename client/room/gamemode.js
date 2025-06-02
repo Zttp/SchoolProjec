@@ -2,11 +2,11 @@ import { DisplayValueHeader, Color, Vector3 } from 'pixel_combats/basic';
 import { Game, Players, Inventory, LeaderBoard, BuildBlocksSet, Teams, Damage, BreackGraph, Ui, Properties, GameMode, Spawns, Timers, TeamsBalancer, AreaService, AreaPlayerTriggerService, AreaViewService, Chat } from 'pixel_combats/room';
 
 // Настройки режима
-const WAITING_TIME = 30;      // Ожидание игроков (утренний сбор)
-const LESSON_TIME = 300;      // Длительность урока
+const WAITING_TIME = 10;      // Ожидание игроков (утренний сбор)
+const LESSON_TIME = 120;      // Длительность урока
 const BREAK_TIME = 180;       // Длительность перемены
-const EXAM_TIME = 240;        // Длительность экзамена
-const DAY_END_TIME = 60;      // Завершение учебного дня
+const EXAM_TIME = 120;        // Длительность экзамена
+const DAY_END_TIME = 30;      // Завершение учебного дня
 
 // Цвета команд (классов)
 const class5AColor = new Color(0, 0.5, 1, 0);    // Голубой - 5А
