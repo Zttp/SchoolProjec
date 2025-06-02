@@ -813,7 +813,7 @@ function initChatCommands() {
         }
         
         else if (command === '/complete') {
-            if (!isPlayerInZone(sender, "library")) {
+            if (!IsEmpty(sender, "library")) {
                 sender.Ui.Hint.Value = "Вы должны быть в библиотеке!";
                 return;
             }
@@ -834,7 +834,7 @@ function initChatCommands() {
         }
         
         else if (command === '/play') {
-            if (!isPlayerInZone(sender, "playground")) {
+            if (!IsEmpty(sender, "playground")) {
                 sender.Ui.Hint.Value = "Вы должны быть на игровой площадке!";
                 return;
             }
@@ -931,7 +931,7 @@ function initChatCommands() {
                 return;
             }
             
-            if (!isPlayerInZone(sender, "auditorium")) {
+            if (!IsEmpty(sender, "auditorium")) {
                 sender.Ui.Hint.Value = "Вы должны быть в актовом зале!";
                 return;
             }
