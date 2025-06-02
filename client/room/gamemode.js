@@ -59,6 +59,9 @@ const schoolMode = {
     examTimer: null,
     cleaningAreas: new Set(),
     activeHomework: null
+    classA: null,
+    classB: null,
+    classC: null
 };
 
 // Контексты
@@ -81,34 +84,43 @@ function initServerProperties() {
 
 // Создание команд с учетом нового API
 function setupTeams() {
+    console.log("Начинаем настройку команд...");
+    
     // Удаляем все существующие команды
-    Teams.All.forEach(team => {
+    const allTeams = Teams.All;
+    for (let i = allTeams.length - 1; i >= 0; i--) {
+        const team = allTeams[i];
+        console.log(`Удаляем команду: ${team.Id}`);
         Teams.Remove(team.Id);
+    }
+    
+    // Даем время на удаление команд
+    Timers.GetContext().Get("TeamSetupDelay").Restart(1, () => {
+        console.log("Создаем новые команды...");
+        
+        // Создаем новые команды
+        Teams.Add('ClassA', '9 "А"', CLASS_COLOR);
+        Teams.Add('ClassB', '9 "Б"', CLASS_COLOR);
+        Teams.Add('ClassC', '9 "В"', CLASS_COLOR);
+        
+        // Получаем ссылки на команды
+        schoolMode.classA = Teams.Get('ClassA');
+        schoolMode.classB = Teams.Get('ClassB');
+        schoolMode.classC = Teams.Get('ClassC');
+        
+        // Настройки строительства
+        schoolMode.classA.Build.BlocksSet.Value = BuildBlocksSet.Blue;
+        schoolMode.classB.Build.BlocksSet.Value = BuildBlocksSet.Red;
+        schoolMode.classC.Build.BlocksSet.Value = BuildBlocksSet.Green;
+        
+        // Настройки спавнов
+        schoolMode.classA.Spawns.SpawnPointsGroups.Add(1);
+        schoolMode.classB.Spawns.SpawnPointsGroups.Add(2);
+        schoolMode.classC.Spawns.SpawnPointsGroups.Add(3);
+        
+        console.log("Команды успешно созданы и настроены");
     });
-
-    // Создаем новые команды
-    Teams.Add('ClassA', '9 "А"', CLASS_COLOR);
-    Teams.Add('ClassB', '9 "Б"', CLASS_COLOR);
-    Teams.Add('ClassC', '9 "В"', CLASS_COLOR);
-
-    const ClassA = Teams.Get('ClassA');
-    const ClassB = Teams.Get('ClassB');
-    const ClassC = Teams.Get('ClassC');
-
-    // Настройки строительства
-    ClassA.Build.BlocksSet.Value = BuildBlocksSet.Blue;
-    ClassB.Build.BlocksSet.Value = BuildBlocksSet.Red;
-    ClassC.Build.BlocksSet.Value = BuildBlocksSet.Green;
-
-    // Настройки спавнов
-    ClassA.Spawns.SpawnPointsGroups.Add(1);
-    ClassB.Spawns.SpawnPointsGroups.Add(2);
-    ClassC.Spawns.SpawnPointsGroups.Add(3);
-
-    return { ClassA, ClassB, ClassC };
 }
-
-const { ClassA, ClassB, ClassC } = setupTeams();
 
 // Создание зон школы
 function setupSchoolZones() {
@@ -846,20 +858,30 @@ function setupLeaderboard() {
 
 // Инициализация игрока
 function initPlayer(player) {
+    console.log(`Инициализация игрока: ${player.NickName}`);
+    
+    // Устанавливаем свойства игрока
     player.Properties.Get('Role').Value = 'student';
     player.Properties.Get('Score').Value = 0;
     player.Properties.Get('Energy').Value = 100;
     player.Properties.Get('Hunger').Value = 0;
     player.Properties.Get('IsVIP').Value = false;
+    
+    // Настройка инвентаря
     player.Inventory.Main.Value = false;
     player.Inventory.Secondary.Value = false;
     player.Inventory.Melee.Value = false;
     player.Inventory.Build.Value = false;
     
     // Добавляем в случайный класс
-    const classes = [ClassA, ClassB, ClassC];
-    const randomClass = classes[Math.floor(Math.random() * classes.length)];
-    randomClass.Add(player);
+    const classes = [schoolMode.classA, schoolMode.classB, schoolMode.classC];
+    if (classes.every(c => c)) {
+        const randomClass = classes[Math.floor(Math.random() * classes.length)];
+        randomClass.Add(player);
+        console.log(`Игрок ${player.NickName} добавлен в класс ${randomClass.Name}`);
+    } else {
+        console.error("Ошибка: не все классы инициализированы");
+    }
     
     // Начальные значения
     schoolMode.playerScores.set(player.Id, 0);
@@ -867,6 +889,7 @@ function initPlayer(player) {
     schoolMode.playerHunger.set(player.Id, 0);
     
     player.Ui.Hint.Value = 'Добро пожаловать в школу! /help - список команд';
+    console.log(`Игрок ${player.NickName} успешно инициализирован`);
 }
 
 // Команды чата (расширенные)
@@ -975,22 +998,46 @@ function setupEventHandlers() {
 
 // Основная инициализация
 function initSchoolMode() {
+    console.log("====== ИНИЦИАЛИЗАЦИЯ ШКОЛЬНОГО РЕЖИМА ======");
     
+    // Сброс состояния
+    schoolMode.state = SchoolStates.MORNING;
+    schoolMode.currentLesson = "math";
+    schoolMode.playerScores.clear();
+    schoolMode.playerEnergy.clear();
+    schoolMode.playerHunger.clear();
+    schoolMode.detentionPlayers.clear();
+    schoolMode.activeQuestion = null;
+    schoolMode.activeHomework = null;
+    schoolMode.cleaningAreas.clear();
+    schoolMode.director = null;
+    schoolMode.teachers = [];
+    schoolMode.classA = null;
+    schoolMode.classB = null;
+    schoolMode.classC = null;
     
     // Инициализация систем
     initServerProperties();
-    setupTeams(); // Пересоздаем команды
-    setupSchoolZones();
-    setupLeaderboard();
-    initChatCommands();
-    setupEventHandlers();
     
-    // Назначаем роли
-    assignRoles();
+    // Настраиваем команды с задержкой
+    setupTeams();
     
-    // Запускаем утреннее состояние
-    setSchoolState(SchoolStates.MORNING);
+    // Даем время на создание команд перед настройкой зон и игроков
+    Timers.GetContext().Get("InitDelay").Restart(2, () => {
+        setupSchoolZones();
+        setupLeaderboard();
+        initChatCommands();
+        setupEventHandlers();
+        
+        // Назначаем роли
+        assignRoles();
+        
+        // Запускаем утреннее состояние
+        setSchoolState(SchoolStates.MORNING);
+        console.log("Школьный режим успешно инициализирован");
+    });
 }
 
 // Запуск игры
-initSchoolMode();                  
+console.log("Запуск школьного режима...");
+initSchoolMode();
