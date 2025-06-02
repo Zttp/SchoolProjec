@@ -1194,9 +1194,7 @@ function initGameMode() {
     initServerProperties();
     initServerTimer();
     setupLeaderboard();
-    setupSchoolZones();
-    initChatCommands();
-    setupEventHandlers();
+    
     
     setGameState(GameStates.WAITING);
 }
