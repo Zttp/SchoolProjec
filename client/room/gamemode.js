@@ -182,6 +182,7 @@ function setGameState(newState) {
             Inv.Main.Value = false;
             Inv.Secondary.Value = false;
             Inv.Melee.Value = false;
+            Inv.Explosive.Value = false;
             Inv.Build.Value = false;
             Dmg.DamageOut.Value = false;
             Sp.Enable = true;
@@ -198,6 +199,7 @@ function setGameState(newState) {
             Inv.Main.Value = false;
             Inv.Secondary.Value = false;
             Inv.Melee.Value = false;
+            Inv.Explosive.Value = false;
             Inv.Build.Value = false;
             Dmg.DamageOut.Value = false;
             Sp.Enable = true;
@@ -214,6 +216,7 @@ function setGameState(newState) {
             Inv.Main.Value = true;
             Inv.Secondary.Value = true;
             Inv.Melee.Value = true;
+            Inv.Explosive.Value = true;
             Inv.Build.Value = false;
             Dmg.DamageOut.Value = true;
             Sp.Enable = true;
@@ -226,6 +229,7 @@ function setGameState(newState) {
             Inv.Main.Value = false;
             Inv.Secondary.Value = false;
             Inv.Melee.Value = false;
+            Inv.Explosive.Value = false;
             Inv.Build.Value = false;
             Dmg.DamageOut.Value = false;
             Sp.Enable = true;
