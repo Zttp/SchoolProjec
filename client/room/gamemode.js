@@ -1180,21 +1180,14 @@ function initGameMode() {
     Dmg.FriendlyFire.Value = false;
     BreackGraph.OnlyPlayerBlocksDmg = true;
     
-    // Инициализация свойств для сохранения данных
-    for (let i = 0; i < 24; i++) {
-        Props.Add(`Player_${i}_Scores`, 0);
-        Props.Add(`Player_${i}_Energy`, 100);
-        Props.Add(`Player_${i}_Hunger`, 0);
-        Props.Add(`Player_${i}_Homework`, "");
-        Props.Add(`Player_${i}_Class`, "");
-        Props.Add(`Player_${i}_Role`, "Ученик");
-        Props.Add(`Banned_${i}`, false);
-    }
+    
     
     initServerProperties();
     initServerTimer();
     setupLeaderboard();
-    
+    setupSchoolZones();
+    initChatCommands();
+    setupEventHandlers();
     
     setGameState(GameStates.WAITING);
 }
