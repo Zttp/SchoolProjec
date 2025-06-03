@@ -268,12 +268,17 @@ function setGameState(newState) {
 }
 
 // Проверка находится ли игрок в зоне
-function isPlayerInZone(player, zoneName) {
-    const zone = schoolMode.schoolZones[zoneName];
-    if (!zone) return false;
+function isPlayerInZone(player, tag) {
+    const areas = AreaService.GetContext().GetByTag(tag);
+    if (!areas || areas.length === 0) return false;
     
-    const distance = player.Position.sub(zone.center).length;
-    return distance <= zone.radius;
+    const playerIndex = player.Position.ToIndex();
+    for (const area of areas) {
+        if (area.Contains(playerIndex)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 // Генерация случайного предмета
