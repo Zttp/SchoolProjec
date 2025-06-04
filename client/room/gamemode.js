@@ -1080,6 +1080,27 @@ function setupLeaderboard() {
 
 // Обработчики событий
 function setupEventHandlers() {
+    // Таймер для синхронизации ботов
+    const botSyncTimer = Timers.GetContext().Get("BotSync");
+    botSyncTimer.OnTimer.Add(function() {
+        for (const [botId, playerId] of Object.entries(schoolMode.botControllers)) {
+            const player = Players.GetByRoomId(playerId);
+            const bot = Bots.Get(parseInt(botId));
+        
+            if (player && bot && bot.Alive) {
+            // Синхронизация позиции и взгляда
+                bot.SetPositionAndDirection(
+                    player.Position,
+                    player.LookDirection
+                );
+            
+            // Синхронизация атаки
+                bot.Attack = player.Inventory.Main.Attack;
+            }
+        }
+        botSyncTimer.RestartLoop(0.1); // 100 мс
+    });
+    botSyncTimer.RestartLoop(0.1);
     // Обновление характеристик
     const statTimer = Timers.GetContext().Get("Stats");
     statTimer.OnTimer.Add(function() {
@@ -1151,6 +1172,35 @@ function setupEventHandlers() {
             player.Spawns.Spawn();
         }
     });
+
+    // Обработчик смерти ботов
+Bots.OnBotDeath.Add(function(deathData) {
+    const botId = deathData.Bot.Id;
+    if (schoolMode.botControllers[botId]) {
+        const playerId = schoolMode.botControllers[botId];
+        const player = Players.GetByRoomId(playerId);
+        if (player) {
+            player.Ui.Hint.Value = "Ваш бот уничтожен!";
+        }
+        delete schoolMode.botControllers[botId];
+    }
+});
+
+// Обработчик удаления ботов
+Bots.OnBotRemove.Add(function(bot) {
+    const botId = bot.Id;
+    if (schoolMode.botControllers[botId]) {
+        delete schoolMode.botControllers[botId];
+    }
+    
+    // Удаляем из playerBots если принадлежал игроку
+    for (const [playerId, playerBot] of Object.entries(schoolMode.playerBots)) {
+        if (playerBot.Id === botId) {
+            delete schoolMode.playerBots[playerId];
+            break;
+        }
+    }
+});
     
     // Обработчик основного таймера (расписания)
     mainTimer.OnTimer.Add(function() {
