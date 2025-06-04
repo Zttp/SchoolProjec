@@ -71,7 +71,9 @@ const schoolMode = {
         "Химия": "Колба",
         "Физкультура": "Мяч"
     },
-    adminId: "D411BD94CAE31F89" // ID администратора
+    adminId: "D411BD94CAE31F89"
+    playerBots: {},              // {playerId: bot}
+    botControllers: {},           // {botId: playerId} - кто управляет ботом// ID администратора
 };
 
 // Инициализация сервера
@@ -623,6 +625,56 @@ function setupSchoolZones() {
     viewDetention.Enable = true;
 }
 
+// Спавн бота для игрока
+function spawnPlayerBot(player, skinId, weaponId) {
+    // Если у игрока уже есть бот - удаляем
+    if (schoolMode.playerBots[player.id]) {
+        schoolMode.playerBots[player.id].Destroy();
+        delete schoolMode.playerBots[player.id];
+    }
+
+    const spawnData = {
+        Position: player.Position,
+        LookDirection: player.LookDirection,
+        WeaponId: weaponId,
+        SkinId: skinId
+    };
+
+    const bot = Bots.CreateHuman(spawnData);
+    if (bot) {
+        schoolMode.playerBots[player.id] = bot;
+        return bot;
+    }
+    return null;
+}
+
+// Присоединение управления ботом к игроку
+function attachBotToPlayer(player) {
+    const bot = schoolMode.playerBots[player.id];
+    if (!bot) {
+        player.Ui.Hint.Value = "У вас нет бота! Создайте бота командой /bot";
+        return;
+    }
+
+    schoolMode.botControllers[bot.Id] = player.id;
+    player.Ui.Hint.Value = "Вы управляете ботом!";
+    
+    // Синхронизация начального состояния
+    bot.SetPositionAndDirection(
+        player.Position,
+        player.LookDirection
+    );
+}
+
+// Отсоединение управления
+function detachBotFromPlayer(player) {
+    const bot = schoolMode.playerBots[player.id];
+    if (!bot) return;
+    
+    delete schoolMode.botControllers[bot.Id];
+    player.Ui.Hint.Value = "Вы больше не управляете ботом.";
+}
+
 // Команды чата
 function initChatCommands() {
     Chat.OnMessage.Add(function(m) {
@@ -983,6 +1035,7 @@ function initChatCommands() {
             setGameState(GameStates.BREAK);
             sender.Ui.Hint.Value = "Урок завершен досрочно!";
         }
+
         
         else if (command === '/class') {
             if (args.length < 2) {
