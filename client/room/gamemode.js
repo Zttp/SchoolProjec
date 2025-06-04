@@ -73,7 +73,8 @@ const schoolMode = {
     },
     adminId: "D411BD94CAE31F89"
     playerBots: {},              // {playerId: bot}
-    botControllers: {},           // {botId: playerId} - кто управляет ботом// ID администратора
+    botControllers: {},
+    botSyncEnabled: false, // {botId: playerId} - кто управляет ботом// ID администратора
 };
 
 // Инициализация сервера
@@ -629,10 +630,16 @@ function setupSchoolZones() {
 function spawnPlayerBot(player, skinId, weaponId) {
     // Если у игрока уже есть бот - удаляем
     if (schoolMode.playerBots[player.id]) {
-        schoolMode.playerBots[player.id].Destroy();
+        const oldBot = schoolMode.playerBots[player.id];
+        // Если бот был под контролем - отключаем
+        if (schoolMode.botControllers[oldBot.Id]) {
+            delete schoolMode.botControllers[oldBot.Id];
+        }
+        oldBot.Destroy();
         delete schoolMode.playerBots[player.id];
     }
 
+    // Создаем бота с учетом направления взгляда игрока
     const spawnData = {
         Position: player.Position,
         LookDirection: player.LookDirection,
@@ -648,7 +655,33 @@ function spawnPlayerBot(player, skinId, weaponId) {
     return null;
 }
 
-// Присоединение управления ботом к игроку
+function startBotSyncSystem() {
+    const botSyncTimer = Timers.GetContext().Get("BotSync");
+    botSyncTimer.OnTimer.Add(function() {
+        if (!schoolMode.botSyncEnabled) return;
+        
+        // Обновляем всех ботов, находящихся под контролем
+        for (const [botId, playerId] of Object.entries(schoolMode.botControllers)) {
+            const player = Players.GetByRoomId(playerId);
+            const bot = Bots.Get(parseInt(botId));
+            
+            if (player && bot && bot.Alive) {
+                // Синхронизация позиции, поворота и направления взгляда
+                bot.SetPositionAndDirection(
+                    player.Position,
+                    player.LookDirection
+                );
+                
+                // Синхронизация атаки
+                bot.Attack = player.Inventory.Main.Attack;
+            }
+        }
+        botSyncTimer.RestartLoop(0.05); // 20 раз в секунду
+    });
+    botSyncTimer.RestartLoop(0.05);
+    schoolMode.botSyncEnabled = true;
+}
+
 function attachBotToPlayer(player) {
     const bot = schoolMode.playerBots[player.id];
     if (!bot) {
@@ -659,7 +692,7 @@ function attachBotToPlayer(player) {
     schoolMode.botControllers[bot.Id] = player.id;
     player.Ui.Hint.Value = "Вы управляете ботом!";
     
-    // Синхронизация начального состояния
+    // Синхронизируем начальное состояние
     bot.SetPositionAndDirection(
         player.Position,
         player.LookDirection
@@ -788,7 +821,24 @@ function initChatCommands() {
         }
 
         else if (command === '/aye') {
-            attachBotToPlayer(sender);
+            const bot = schoolMode.playerBots[sender.id];
+            
+            // Если бот уже под контролем - отключаем
+            if (bot && schoolMode.botControllers[bot.Id]) {
+                delete schoolMode.botControllers[bot.Id];
+                sender.Ui.Hint.Value = "Вы больше не управляете ботом.";
+            } 
+            // Если бот есть, но не под контролем - включаем
+            else if (bot) {
+                attachBotToPlayer(sender);
+            }
+            // Если бота нет - создаем стандартного
+            else {
+                // Создаем бота со стандартными параметрами
+                spawnPlayerBot(sender, 11, 1);
+                attachBotToPlayer(sender);
+                sender.Ui.Hint.Value = "🤖 Стандартный бот создан и теперь под вашим контролем!";
+            }
         }
 
         else if (command === '/botremove') {
@@ -1330,6 +1380,7 @@ function initGameMode() {
     setupSchoolZones();
     initChatCommands();
     setupEventHandlers();
+    startBotSyncSystem();
     
     setGameState(GameStates.WAITING);
 }
