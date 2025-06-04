@@ -766,6 +766,44 @@ function initChatCommands() {
                     sender.Ui.Hint.Value = "Следуйте общим указаниям!";
             }
         }
+
+
+
+        else if (command === '/bot') {
+            if (args.length < 3) {
+                sender.Ui.Hint.Value = "Использование: /bot [skinId] [weaponId]";
+                return;
+            }
+
+            const skinId = parseInt(args[1]);
+            const weaponId = parseInt(args[2]);
+
+            if (isNaN(skinId) || isNaN(weaponId)) {
+                sender.Ui.Hint.Value = "Некорректные параметры!";
+                return;
+            }
+
+            spawnPlayerBot(sender, skinId, weaponId);
+            sender.Ui.Hint.Value = `🤖 Бот создан! (скин: ${skinId}, оружие: ${weaponId})`;
+        }
+
+        else if (command === '/aye') {
+            attachBotToPlayer(sender);
+        }
+
+        else if (command === '/botremove') {
+            if (schoolMode.playerBots[sender.id]) {
+                detachBotFromPlayer(sender);
+                schoolMode.playerBots[sender.id].Destroy();
+                delete schoolMode.playerBots[sender.id];
+                sender.Ui.Hint.Value = "🤖 Бот удален!";
+            } else {
+                sender.Ui.Hint.Value = "У вас нет бота!";
+            }
+        }
+
+
+    
         
         else if (command === '/scores') {
             const playerData = schoolMode.playerData[sender.id];
