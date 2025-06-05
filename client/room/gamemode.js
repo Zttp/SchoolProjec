@@ -276,7 +276,7 @@ function setGameState(newState) {
         case GameStates.INTRODUCTION:
             Ui.GetContext().Hint.Value = "Добро пожаловать в школу! Начинается таинственное расследование...";
             Sp.Enable = true;
-            player.Spawns.Spawn()
+            Sp.Spawn()
             mainTimer.Restart(INTRODUCTION_TIME);
             break;
             
